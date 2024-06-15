@@ -1,0 +1,129 @@
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+
+local DiscordLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/UI-Libs/main/discord%20lib.txt")())()
+local win = DiscordLib:Window("pa1n Scripts")
+local serv = win:Server("x", "")
+local main = serv:Channel("Main")
+
+local function autoattack()
+    VirtualInputManager:SendMouseButtonEvent(550, 150, 0, true, game, 1)
+    wait(0.3)
+end
+
+local attacking = false
+main:Toggle("Auto Attack", false, function(t)
+    attacking = t
+    while attacking do
+        autoattack()
+        wait(0.3)
+    end
+end)
+
+local autoSkill = false
+main:Toggle("Auto Skill", false, function(t)
+    autoSkill = t
+    while autoSkill do
+        local player = Players.LocalPlayer
+        if player and player.Character and player.Character:FindFirstChild("Package") then
+            local events = player.Character.Package.Events
+            events.UseSkill_Client:FireServer("Serpent's Wrath")
+            events.UseSkill_Client:FireServer("Serpent Strike")
+            events.UseSkill_Client:FireServer("Toxin Slashes")
+        end
+        wait(6)
+    end
+end)
+
+main:Label("-- Mobs --")
+
+local function checkNestAndTeleport()
+    local dungeons = Workspace.Dungeons:GetChildren()
+    for _, nest in ipairs(dungeons) do
+        if nest.Name == "Raptor Nest" then
+            local stageLabel = nest.Title.titleTemp.stage
+            if stageLabel and stageLabel:IsA("TextLabel") then
+                local stageText = stageLabel.Text
+                if stageText ~= "Unactive" then
+                    local player = Players.LocalPlayer
+                    local primaryPart = nest.PrimaryPart
+                    if primaryPart then
+                        player.Character.HumanoidRootPart.CFrame = primaryPart.CFrame
+                        break
+                    end
+                end
+            end
+        end
+    end
+end
+
+main:Button("Teleport to Nest", checkNestAndTeleport)
+
+local togglefarm1 = false
+main:Toggle("Toggle Farm Raptor + Fire Bird", false, function(t)
+    togglefarm1 = t
+    while togglefarm1 do
+        for _, v in ipairs(Workspace.Entities:GetChildren()) do
+            if v:IsA("Model") and v:FindFirstChild('HumanoidRootPart') and v:FindFirstChild('Humanoid') and v.Humanoid.Health > 0 then
+                if v.Name == "Electro Raptor" or v.Name == "Fire Bird" then
+                    Players.LocalPlayer.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, 0, 5)
+                end
+            end
+        end
+        wait(0.1)
+    end
+end)
+
+main:Label("-- Quests --")
+
+local loopRunning = false
+local function fireQuest()
+    ReplicatedStorage.Main.Remotes.MakeKillQuest:FireServer("Electro Raptor")
+    wait(1.1)
+    ReplicatedStorage.Main.Remotes.MakeDungeonQuest:FireServer("Raptor Nest")
+    wait(1.1)
+    ReplicatedStorage.Main.Remotes.MakeFodderQuest:FireServer("Electro Raptor")
+end
+
+main:Toggle("Auto Quest", false, function(t)
+    loopRunning = t
+    while loopRunning do
+        fireQuest()
+        wait(2.5)
+    end
+end)
+
+local function rerollQuest(questType, questName, chestThreshold)
+    local player = Players.LocalPlayer
+    local quests = player.Data.Quests:GetChildren()
+    for _, questData in pairs(quests) do
+        if string.find(questData.Name, questType) then
+            local foundPlatinumChest = false
+            for _, child in pairs(questData:GetChildren()) do
+                if child.Name == "Platinum Chest" and tonumber(child.Value) > chestThreshold then
+                    foundPlatinumChest = true
+                    break
+                end
+            end
+            if not foundPlatinumChest then
+                ReplicatedStorage.Main.Remotes.ReRollQuest:FireServer(questData)
+            end
+        end
+    end
+end
+
+local function createQuestToggle(questType, chestThreshold)
+    main:Toggle("Reroll " .. questType .. " Quest", false, function(t)
+        local questRunning = t
+        while questRunning do
+            rerollQuest(questType, questType .. " Quest", chestThreshold)
+            task.wait(0.1)
+        end
+    end)
+end
+
+createQuestToggle("Dungeon", 1)
+createQuestToggle("Kill", 1)
+createQuestToggle("Fodder", 10)
