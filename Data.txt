@@ -2416,17 +2416,24 @@ function DiscordLib:Window(text)
                 ValueLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
                 ValueLabel.TextSize = 10.000
 
-                local function move(input)
-                    local pos = UDim2.new(math.clamp((input.Position.X - SliderFrame.AbsolutePosition.X) / SliderFrame.AbsoluteSize.X, 0, 1), -6, -0.644999981, 0)
-                    local pos1 = UDim2.new(math.clamp((input.Position.X - SliderFrame.AbsolutePosition.X) / SliderFrame.AbsoluteSize.X, 0, 1), 0, 0, 8)
-                    CurrentValueFrame.Size = pos1
-                    Zip.Position = pos
-
-                    local factor = 10 ^ (decimalPlaces or 0)
-                    local value = math.floor(((pos.X.Scale * max) / max) * (max - min) * factor + min * factor) / factor
-                    ValueLabel.Text = string.format("%." .. (decimalPlaces or 0) .. "f", value)
-                    pcall(callback, value)
-                end
+		local function move(input)
+		    local pos = UDim2.new(
+		        math.clamp((input.Position.X - SliderFrame.AbsolutePosition.X) / SliderFrame.AbsoluteSize.X, 0, 1),
+		        -6, -0.644999981, 0
+		    )
+		    local pos1 = UDim2.new(
+		        math.clamp((input.Position.X - SliderFrame.AbsolutePosition.X) / SliderFrame.AbsoluteSize.X, 0, 1),
+		        0, 0, 8
+		    )
+		    CurrentValueFrame.Size = pos1
+		    Zip.Position = pos
+		
+		    -- Modify this part to include decimals (e.g., 1 decimal place)
+		    local value = math.floor((((pos.X.Scale * max) / max) * (max - min) + min) * 10) / 10
+		    ValueLabel.Text = tostring(value)
+		
+		    pcall(callback, value)
+		end
 
                 Zip.InputBegan:Connect(function(input)
                     if input.UserInputType == Enum.UserInputType.MouseButton1 then
