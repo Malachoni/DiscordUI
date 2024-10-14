@@ -2415,57 +2415,58 @@ function DiscordLib:Window(text)
                 ValueLabel.Text = tostring(start and math.floor((start / max) * (max - min) + min) or 0)
                 ValueLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
                 ValueLabel.TextSize = 10.000
-
 		local function move(input)
 		    local pos = UDim2.new(
-		        math.clamp((input.Position.X - SliderFrame.AbsolutePosition.X) / SliderFrame.AbsoluteSize.X, 0, 1),
-		        -6, -0.644999981, 0
+			math.clamp((input.Position.X - SliderFrame.AbsolutePosition.X) / SliderFrame.AbsoluteSize.X, 0, 1),
+			-6, -0.644999981, 0
 		    )
 		    local pos1 = UDim2.new(
-		        math.clamp((input.Position.X - SliderFrame.AbsolutePosition.X) / SliderFrame.AbsoluteSize.X, 0, 1),
-		        0, 0, 8
+			math.clamp((input.Position.X - SliderFrame.AbsolutePosition.X) / SliderFrame.AbsoluteSize.X, 0, 1),
+			0, 0, 8
 		    )
 		    CurrentValueFrame.Size = pos1
 		    Zip.Position = pos
 		
-		    -- Modify this part to include decimals (e.g., 1 decimal place)
-		    local value = math.floor((((pos.X.Scale * max) / max) * (max - min) + min) * 10) / 10
-		    ValueLabel.Text = tostring(value)
+		    -- Calculate the value including decimals
+		    local value = (pos.X.Scale * (max - min)) + min
+		    ValueLabel.Text = string.format("%.1f", value)  -- Display one decimal place
 		
 		    pcall(callback, value)
 		end
+		
+		Zip.InputBegan:Connect(function(input)
+		    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			dragging = true
+			ValueBubble.Visible = true
+		    end
+		end)
+		
+		Zip.InputEnded:Connect(function(input)
+		    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			dragging = false
+			ValueBubble.Visible = false
+		    end
+		end)
+		
+		game:GetService("UserInputService").InputChanged:Connect(function(input)
+		    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+			move(input)
+		    end
+		end)
+		
+		function SliderFunc:Change(tochange)
+		    CurrentValueFrame.Size = UDim2.new((tochange or 0 - min) / (max - min), 0, 0, 8)
+		    Zip.Position = UDim2.new((tochange or 0 - min) / (max - min), -6, -0.644999981, 0)
+		
+		    -- Format value with one decimal place
+		    ValueLabel.Text = string.format("%.1f", tochange or 0)
+		    pcall(callback, tochange)
+		end
+		
+		ChannelHolder.CanvasSize = UDim2.new(0, 0, 0, ChannelHolderLayout.AbsoluteContentSize.Y)
+		return SliderFunc
+		end
 
-                Zip.InputBegan:Connect(function(input)
-                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                        dragging = true
-                        ValueBubble.Visible = true
-                    end
-                end)
-
-                Zip.InputEnded:Connect(function(input)
-                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                        dragging = false
-                        ValueBubble.Visible = false
-                    end
-                end)
-
-                game:GetService("UserInputService").InputChanged:Connect(function(input)
-                    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-                        move(input)
-                    end
-                end)
-
-                function SliderFunc:Change(tochange)
-                    local factor = 10 ^ (decimalPlaces or 0)
-                    CurrentValueFrame.Size = UDim2.new((tochange or 0) / max, 0, 0, 8)
-                    Zip.Position = UDim2.new((tochange or 0) / max, -6, -0.644999981, 0)
-                    ValueLabel.Text = string.format("%." .. (decimalPlaces or 0) .. "f", tochange and math.floor((tochange / max) * (max - min) * factor + min * factor) / factor or 0)
-                    pcall(callback, tochange)
-                end
-
-                ChannelHolder.CanvasSize = UDim2.new(0, 0, 0, ChannelHolderLayout.AbsoluteContentSize.Y)
-                return SliderFunc
-            end
 			function ChannelContent:Seperator()
 				local Seperator1 = Instance.new("Frame")
 				local Seperator2 = Instance.new("Frame")
